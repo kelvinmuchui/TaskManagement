@@ -1,7 +1,7 @@
 // app/api/tasks/route.ts - UPDATED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 import { TaskModel } from '@/lib/models/Task';
 
 export async function GET(request: NextRequest) {
