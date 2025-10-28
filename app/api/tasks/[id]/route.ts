@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,8 +16,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    // Await params in Next.js 15
+    const { id } = await params;
+    
     // Validate ObjectId format
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
     
@@ -25,7 +28,7 @@ export async function GET(
     const isAdmin = (session.user as any).isAdmin;
     
     const task = await TaskModel.getTaskById(
-      params.id,
+      id,
       isAdmin ? undefined : username
     );
     
@@ -42,7 +45,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -51,15 +54,27 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    // Await params in Next.js 15
+    const { id } = await params;
+    
     // Validate ObjectId format
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
     
     const username = (session.user as any).username;
     const isAdmin = (session.user as any).isAdmin;
     
-    const body = await request.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await request.json();
+      if (!body || Object.keys(body).length === 0) {
+        return NextResponse.json({ error: 'Request body is required' }, { status: 400 });
+      }
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or empty request body' }, { status: 400 });
+    }
     
     // Remove fields that shouldn't be updated directly
     delete body._id;
@@ -67,7 +82,7 @@ export async function PUT(
     delete body.createdAt;
     
     const task = await TaskModel.updateTask(
-      params.id,
+      id,
       body,
       isAdmin ? undefined : username
     );
@@ -82,10 +97,9 @@ export async function PUT(
     return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   }
 }
-
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -94,8 +108,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    // Await params in Next.js 15
+    const { id } = await params;
+    
     // Validate ObjectId format
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
     
@@ -103,7 +120,7 @@ export async function DELETE(
     const isAdmin = (session.user as any).isAdmin;
     
     const deleted = await TaskModel.deleteTask(
-      params.id,
+      id,
       isAdmin ? undefined : username
     );
     
